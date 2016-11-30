@@ -6,7 +6,7 @@ machine:
 
 dependencies:
   override:
-  	- sudo easy_install pyparsing
+  	- pip install pyparsing
     - ./make.py install-deps
 
 test:
