@@ -1,0 +1,106 @@
+#env DANGER_GITHUB_API_TOKEN
+#env CIRCLE_ARTIFACTS
+
+LINTER_EXPORT_PATH = lint_output.txt
+INSTALLED_FILES_RECORD = installed_files.txt
+USER_FLAG = ' '
+	
+global:
+	SYSTEM_NAME = shellget('uname', '-s')
+	if SYSTEM_NAME == 'Darwin':
+		USER_FLAG = '--user'
+	
+	def write_file(file_path, file_contents):
+		fd = open(file_path, 'w+')
+		fd.write(file_contents)
+		fd.close()
+
+	def remove(file_path):
+		shell('rm', ['-rRf', file_path])
+
+	def removeall(name, location='.', flags=[]):
+		shell('find', [location, '-name', name, '-delete']+flags)
+
+	def checkfor(command_name):
+		try:
+			shellcheck(command_name, '--version')
+			print('found '+command_name+'!')
+		except:
+			print('did not find '+command_name+'; please ensure your path is configured correctly and run `./make.py install-deps` first!')
+
+install-tools:
+	print('installing git hooks...')
+	shell('./tools/hooks-config.py')
+
+install-deps: install-tools
+	print('installing dependencies...')
+	shell('pip3', ['install', '--requirement', 'dependencies.txt'])
+	shell('gem', ['install', 'bundler', USER_FLAG])
+	shell('bundle', 'install')
+
+check: install-deps
+	print('validating environment...')
+	checkfor('python3')
+	checkfor('pip3')
+	checkfor('pylint')
+	checkfor('gem')
+	checkfor('bundle')
+	checkfor('danger')
+
+clean:
+	print('removing existing installation... ')
+	touch(INSTALLED_FILES_RECORD)
+	for file_path in tolist(shellget('cat', INSTALLED_FILES_RECORD)):
+		remove(file_path)
+	remove('./readmail.egg-info')
+	remove('./build')
+	remove('./dist')
+	remove('./.eggs')
+	remove(LINTER_EXPORT_PATH)
+	removeall('.DS_Store')
+	removeall('*.pyc')
+	removeall('__pycache__', flags=['-type', 'd'])
+	remove(INSTALLED_FILES_RECORD)
+
+lint: check clean
+	print('running linter... ')
+	touch(LINTER_EXPORT_PATH)
+	_, output, _ = shellexact('pylint', ['--rcfile=pylintrc', './readmail'])
+	write_file(LINTER_EXPORT_PATH, output)
+	print('generated linter report: '+LINTER_EXPORT_PATH)
+
+build: lint
+	print('building...')
+	touch(INSTALLED_FILES_RECORD)
+	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
+
+danger: build
+	print('running danger... ')
+	if DANGER_GITHUB_API_TOKEN is not None:
+		print('(PR)... ')
+		shell('bundle', ['exec', 'danger', '--verbose'])
+	else:
+		print('(local)... ')
+		shell('bundle', ['exec', 'danger', 'local', '--verbose'])
+
+artifacts: danger
+	print('processing artifacts...')
+	if CIRCLE_ARTIFACTS is not None:
+		shell('cp', [LINTER_EXPORT_PATH, CIRCLE_ARTIFACTS])
+	else:
+		print('nothing to do!')
+
+ci: artifacts
+
+help:
+	print('Usage:\n')
+	print('./make.py build         -- Builds and installs')
+	print('./make.py clean         -- Removes an existing build')
+	print('./make.py lint          -- Runs pylint on the code')
+	print('./make.py install-tools -- Installs tools uses for development')
+	print('./make.py install-deps  -- Installs the dependencies needed to build')
+	print('./make.py danger        -- Runs Danger on the code')
+	print('./make.py artifacts     -- tests for and exports artifacts from the build')
+	print('./make.py ci            -- simulates running the build on CI')
+
+all: help
