@@ -1,0 +1,2 @@
+blessings >= 1.6
+pylint >= 1.6.1
