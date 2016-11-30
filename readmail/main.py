@@ -29,11 +29,84 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import sys
-#import argparse
+import argparse
+from .version           import __version__ as READMAIL_VERSION
+from .Helpers.Logger    import Logger
+from .Helpers.Switch    import Switch
+from .                  import term
+from .configuration     import mailboxconfiguration
 
 def main(args=sys.argv[1:]):
-    pass
+    parser = argparse.ArgumentParser(description='a simple email reader, for use with getmail')
+    parser.add_argument(
+        '--version',
+        help='displays the version information',
+        action='version',
+        version=READMAIL_VERSION
+    )
+    parser.add_argument(
+        '--quiet',
+        help='Silences all logging output',
+        default=False,
+        action='store_true'
+    )
+    parser.add_argument(
+        '--verbose',
+        help='Adds verbosity to logging output',
+        default=False,
+        action='store_true'
+    )
+    parser.add_argument(
+        '--no-ansi',
+        help='Disables the ANSI color codes as part of the logger',
+        default=False,
+        action='store_true'
+    )
+    parser.add_argument(
+        '--debug',
+        help=argparse.SUPPRESS,
+        default=False,
+        action='store_true'
+    )
+    
+    # -------------------------------------------------------------------------
+    # flags for readmail
+    # -------------------------------------------------------------------------
+    parser.add_argument(
+        '--config',
+        help='Specify a custom configuration path, the default is ~/.config/readmail/',
+        default=os.expanduserpath('~/.config/readmail/'),
+        action='store',
+    )
+
+    # -------------------------------------------------------------------------
+    # application startup
+    # -------------------------------------------------------------------------
+
+    # collect all arguments from the command line and environment variable
+    all_arguments = args
+    default_arguments_from_env = os.environ.get('READMAIL_DEFAULT_FLAGS')
+    if default_arguments_from_env is not None:
+        all_arguments += default_arguments_from_env
+
+    # now parse the arguments
+    init = parser.parse_args(all_arguments)
+    
+    # perform the logging modifications before we do any other operations
+    Logger.disableANSI(args.no_ansi)
+    Logger.enableDebugLogger(args.debug)
+    Logger.isVerbose(args.verbose)
+    Logger.isSilent(args.quiet)
+    
+    # verify that this is being run in a UTF-8 supported environment
+    if term.uses_suitable_locale() is False:
+        Logger.write().error('Environment could not be configured to support UTF-8, exiting!')
+        sys.exit(1)
+    else:
+        # start up the mailbox configuration first to verify that we have a valid config to work from
+        config = mailboxconfiguration.MailboxConfiguration(init.config)
 
 if __name__ == '__main__':
     main()

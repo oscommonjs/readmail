@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) 2016, Samantha Marshall (http://pewpewthespells.com)
 # All rights reserved.
 #
@@ -28,27 +27,3 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from setuptools import setup
-
-setup(
-    name = 'readmail',
-    version = '0.1',
-    description = 'Tool for reading emails fetch via getmail',
-    url = 'https://github.com/samdmarshall/readmail',
-    author = 'Samantha Marshall',
-    author_email = 'hello@pewpewthespells.com',
-    license = 'BSD 3-Clause',
-    packages = [ 
-        'readmail',
-        'readmail/Helpers',
-        'readmail/configuration',
-    ],
-    entry_points = { 
-        'console_scripts': [ 'readmail = readmail:main' ] 
-    },
-    zip_safe = False,
-    install_requires = [
-        'blessings',
-    ]
-)

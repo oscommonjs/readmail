@@ -29,26 +29,14 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from setuptools import setup
+import os
+import locale
+import codecs
 
-setup(
-    name = 'readmail',
-    version = '0.1',
-    description = 'Tool for reading emails fetch via getmail',
-    url = 'https://github.com/samdmarshall/readmail',
-    author = 'Samantha Marshall',
-    author_email = 'hello@pewpewthespells.com',
-    license = 'BSD 3-Clause',
-    packages = [ 
-        'readmail',
-        'readmail/Helpers',
-        'readmail/configuration',
-    ],
-    entry_points = { 
-        'console_scripts': [ 'readmail = readmail:main' ] 
-    },
-    zip_safe = False,
-    install_requires = [
-        'blessings',
-    ]
-)
+def uses_suitable_locale() -> bool:
+    is_suitable_locale = True
+    if codecs.lookup(locale.getpreferredencoding()).name == 'ascii': #pragma: no cover
+        os.environ['LANG'] = 'en_US.UTF-8'
+        if codecs.lookup(locale.getpreferredencoding()).name == 'ascii': #pragma: no cover
+            is_suitable_locale = False
+    return is_suitable_locale
