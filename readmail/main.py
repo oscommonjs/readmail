@@ -32,11 +32,13 @@
 import os
 import sys
 import argparse
-from .version           import __version__ as READMAIL_VERSION
-from .Helpers.Logger    import Logger
-from .Helpers.Switch    import Switch
-from .                  import term
-from .configuration     import mailboxconfiguration
+from .version                               import __version__ as READMAIL_VERSION
+from .helpers.Logger                        import Logger
+from .helpers.Switch                        import Switch
+from .configuration.mailboxconfiguration    import MailboxConfiguration
+from .data.mail                             import MailData
+from .                                      import term
+from .                                      import data
 
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='a simple email reader, for use with getmail')
@@ -106,10 +108,13 @@ def main(args=sys.argv[1:]):
         sys.exit(1)
     else:
         # start up the mailbox configuration first to verify that we have a valid config to work from
-        config = mailboxconfiguration.MailboxConfiguration(init.config)
+        config = MailboxConfiguration(init.config)
         if config.is_valid() is not True:
             Logger.write().error('Could not load; invalid configuration')
             sys.exit(1)
+        mailbox = data.mail.LoadMailboxFromConfiguration(config.get_type(), config.get_location())
+        if mailbox is not None:
+            mail_data = MailData(mailbox)
 
 if __name__ == '__main__':
     main()

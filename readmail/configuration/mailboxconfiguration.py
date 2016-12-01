@@ -30,7 +30,7 @@
 
 import os
 import configparser
-from ..Helpers.Logger   import Logger
+from ..helpers.Logger   import Logger
 from .                  import ruleconfiguration
 
 class MailboxConfiguration(object):
@@ -44,6 +44,13 @@ class MailboxConfiguration(object):
             self.__mailbox_config = configparser.ConfigParser()
             self.__mailbox_config.read(configuration_file_path)
         return valid
+
+
+    def get_type(self) -> str:
+        return self.__mailbox_config.get('account', 'type')
+
+    def get_location(self) -> str:
+        return os.path.expanduser(self.__mailbox_config.get('account', 'location'))
 
     def is_valid(self) -> bool:
         rule_file_path = None

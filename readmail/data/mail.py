@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) 2016, Samantha Marshall (http://pewpewthespells.com)
 # All rights reserved.
 #
@@ -29,28 +28,37 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from setuptools import setup
+import os
+import mailbox
+from ..helpers.Logger       import Logger
+from ..helpers.Switch       import Switch
 
-setup(
-    name = 'readmail',
-    version = '0.1',
-    description = 'Tool for reading emails fetch via getmail',
-    url = 'https://github.com/samdmarshall/readmail',
-    author = 'Samantha Marshall',
-    author_email = 'hello@pewpewthespells.com',
-    license = 'BSD 3-Clause',
-    packages = [ 
-        'readmail',
-        'readmail/helpers',
-        'readmail/configuration',
-        'readmail/data',
-        'readmail/viewer',
-    ],
-    entry_points = { 
-        'console_scripts': [ 'readmail = readmail:main' ] 
-    },
-    zip_safe = False,
-    install_requires = [
-        'blessings',
-    ]
-)
+def LoadMailboxFromConfiguration(mailbox_type: str, location: str) -> mailbox.Mailbox:
+    mail_box = None
+    if os.path.exists(location) is True:
+        for case in Switch(mailbox_type):
+            if case('maildir'):
+                mail_box = mailbox.Maildir(location)
+                break
+            if case('mbox'):
+                mail_box = mailbox.mbox(location)
+                break
+            if case('mh'):
+                mail_box = mailbox.MH(location)
+                break
+            if case('babyl'):
+                mail_box = mailbox.Babyl(location)
+                break
+            if case('mmdf'):
+                mail_box = mailbox.MMDF(location)
+                break
+            if case():
+                Logger.write().error('Unknown mailbox type "%s" was specified' % mailbox_type)
+                break
+    else:
+        Logger.write().error('The mailbox path given (%s) does not exist!' % location)
+    return mail_box
+
+class MailData(object):
+    def __init__(self, mail_box: mailbox.Mailbox):
+        self.__mailbox = mail_box
