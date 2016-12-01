@@ -29,17 +29,40 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import configparser
 from ..Helpers.Logger   import Logger
+from .                  import ruleconfiguration
 
 class MailboxConfiguration(object):
     def __init__(self, startup_path):
         self.__configuration_dir = os.path.expanduser(startup_path)
 
-    def is_valid(self) -> bool:
-        valid = os.path.exists(self.__configuration_dir)
+    def load_mailbox_config(self) -> bool:
+        configuration_file_path = os.path.join(self.__configuration_dir, 'init')
+        valid = os.path.exists(configuration_file_path)
         if valid is True:
-            configuration_file_path = os.path.join(self.__configuration_dir, 'init')
-            valid = os.path.exists(configuration_file_path)
-        else:
+            self.__mailbox_config = configparser.ConfigParser()
+            self.__mailbox_config.read(configuration_file_path)
+        return valid
+
+    def is_valid(self) -> bool:
+        rule_file_path = None
+        
+        valid = os.path.exists(self.__configuration_dir)
+        # testing that the specified path exists
+        if valid is False:
             Logger.write().error('Unable to initialize; could not find configuration directory "%s"' % self.__configuration_dir)
+        else:
+            valid = self.load_mailbox_config()
+        # testing that the "init" file in the configuration dir exists and is valid
+        if valid is False:
+            Logger.write().error('Unable to initialize; could not find the "init" configuration file in directory "%s"' % self.__configuration_dir)
+        else:
+            rule_file_path = os.path.join(self.__configuration_dir, 'rules')
+            valid = os.path.exists(rule_file_path)
+        # testing that the "rules" file in the configuration dir exists
+        if valid is False:
+            Logger.write().error('Unable to initialize; could not find the "rules" configuration file in the directory "%s"' % self.__configuration_dir)
+        else:
+            self.__rule_configuration = ruleconfiguration.RuleConfiguration(rule_file_path)
         return valid
