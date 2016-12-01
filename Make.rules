@@ -69,12 +69,17 @@ lint: check clean
 	write_file(LINTER_EXPORT_PATH, output)
 	print('generated linter report: '+LINTER_EXPORT_PATH)
 
-build: lint
+build:
 	print('building...')
 	touch(INSTALLED_FILES_RECORD)
 	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
 
-danger: build
+build-online: lint
+	print('building...')
+	touch(INSTALLED_FILES_RECORD)
+	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
+
+danger: build-online
 	print('running danger... ')
 	if DANGER_GITHUB_API_TOKEN is not None:
 		print('(PR)... ')

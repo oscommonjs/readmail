@@ -77,7 +77,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument(
         '--config',
         help='Specify a custom configuration path, the default is ~/.config/readmail/',
-        default=os.expanduserpath('~/.config/readmail/'),
+        default=os.path.expanduser('~/.config/readmail/'),
         action='store',
     )
 
@@ -95,10 +95,10 @@ def main(args=sys.argv[1:]):
     init = parser.parse_args(all_arguments)
     
     # perform the logging modifications before we do any other operations
-    Logger.disableANSI(args.no_ansi)
-    Logger.enableDebugLogger(args.debug)
-    Logger.isVerbose(args.verbose)
-    Logger.isSilent(args.quiet)
+    Logger.disableANSI(init.no_ansi)
+    Logger.enableDebugLogger(init.debug)
+    Logger.isVerbose(init.verbose)
+    Logger.isSilent(init.quiet)
     
     # verify that this is being run in a UTF-8 supported environment
     if term.uses_suitable_locale() is False:

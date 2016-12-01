@@ -32,4 +32,11 @@ import os
 
 class MailboxConfiguration(object):
     def __init__(self, startup_path):
-        self.configuration_path = startup_path
+        self.__configuration_dir = startup_path
+
+    def is_valid(self) -> bool:
+        valid = os.path.exists(self.__configuration_dir)
+        if valid is True:
+            configuration_file_path = os.path.join(self.__configuration_dir, 'init')
+            valid = os.path.exists(configuration_file_path)
+        return valid
