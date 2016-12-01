@@ -1,2 +1,2 @@
 remote_origin = 'git@github.com:samdmarshall/readmail.git'
-commit_hash = '0ec6337'
+commit_hash = '8a99194'

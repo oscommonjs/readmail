@@ -77,7 +77,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument(
         '--config',
         help='Specify a custom configuration path, the default is ~/.config/readmail/',
-        default=os.path.expanduser('~/.config/readmail/'),
+        default='~/.config/readmail/',
         action='store',
     )
 
@@ -107,6 +107,9 @@ def main(args=sys.argv[1:]):
     else:
         # start up the mailbox configuration first to verify that we have a valid config to work from
         config = mailboxconfiguration.MailboxConfiguration(init.config)
+        if config.is_valid() is not True:
+            Logger.write().error('Could not load; invalid configuration')
+            sys.exit(1)
 
 if __name__ == '__main__':
     main()

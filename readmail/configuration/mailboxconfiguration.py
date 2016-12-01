@@ -29,14 +29,17 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+from ..Helpers.Logger   import Logger
 
 class MailboxConfiguration(object):
     def __init__(self, startup_path):
-        self.__configuration_dir = startup_path
+        self.__configuration_dir = os.path.expanduser(startup_path)
 
     def is_valid(self) -> bool:
         valid = os.path.exists(self.__configuration_dir)
         if valid is True:
             configuration_file_path = os.path.join(self.__configuration_dir, 'init')
             valid = os.path.exists(configuration_file_path)
+        else:
+            Logger.write().error('Unable to initialize; could not find configuration directory "%s"' % self.__configuration_dir)
         return valid
