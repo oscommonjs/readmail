@@ -3,12 +3,9 @@ env CIRCLE_ARTIFACTS
 
 LINTER_EXPORT_PATH = lint_output.txt
 INSTALLED_FILES_RECORD = installed_files.txt
-USER_FLAG = ' '
 	
 global:
 	SYSTEM_NAME = shellget('uname', '-s')
-	if SYSTEM_NAME == 'Darwin':
-		USER_FLAG = '--user'
 	
 	def write_file(file_path, file_contents):
 		fd = open(file_path, 'w+')
@@ -35,7 +32,10 @@ install-tools:
 install-deps: install-tools
 	print('installing dependencies...')
 	shell('pip3', ['install', '--requirement', 'dependencies.txt'])
-	shell('gem', ['install', 'bundler', USER_FLAG])
+	if SYSTEM_NAME == 'Darwin':
+		shell('gem', ['install', 'bundler', '--user'])
+	else:
+		shell('gem', ['install', 'bundler'])
 	shell('bundle', 'install')
 
 check: install-deps
