@@ -86,6 +86,8 @@ build: analyze
 	touch(file_named(INSTALLED_FILES_RECORD_NAME))
 	_, output, _ = shellexact('python3', ['setup.py', 'install', '--record', file_named(INSTALLED_FILES_RECORD_NAME)])
 	write_file(file_named(BUILD_EXPORT_NAME), output)
+	print(outputS)
+	print('generated build report: '+file_named(BUILD_EXPORT_NAME))
 
 danger: build
 	try:
@@ -101,7 +103,8 @@ danger: build
 artifacts: danger
 	print('processing artifacts...')
 	if CIRCLE_ARTIFACTS is not None:
-		shell('cp', [file_named('*'), CIRCLE_ARTIFACTS])
+		for name in [LINTER_EXPORT_NAME,ANALYZER_EXPORT_NAME,BUILD_EXPORT_NAME,INSTALLED_FILES_RECORD_NAME]:
+		  		shell('cp', [file_named(name), CIRCLE_ARTIFACTS])
 	else:
 		print('nothing to do!')
 
