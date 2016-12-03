@@ -2,6 +2,7 @@ env DANGER_GITHUB_API_TOKEN
 env CIRCLE_ARTIFACTS
 
 LINTER_EXPORT_PATH = lint_output.txt
+ANALYZER_EXPORT_PATH = static_analysis_output.txt
 INSTALLED_FILES_RECORD = installed_files.txt
 	
 global:
@@ -69,12 +70,19 @@ lint: check clean
 	write_file(LINTER_EXPORT_PATH, output)
 	print('generated linter report: '+LINTER_EXPORT_PATH)
 
+analyze: lint
+	print('running static analyzer... ')
+	touch(ANALYZER_EXPORT_PATH)
+	_, output, _ shellexact('mypy', ['-p', './readmail'])
+	write_file(ANALYZER_EXPORT_PATH, output)
+	print('generated static analysis report: '+ANALYZER_EXPORT_PATH)
+
 dev:
 	print('building...')
 	touch(INSTALLED_FILES_RECORD)
 	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
 
-build: lint
+build: analyze
 	print('building...')
 	touch(INSTALLED_FILES_RECORD)
 	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
@@ -94,6 +102,7 @@ artifacts: danger
 	print('processing artifacts...')
 	if CIRCLE_ARTIFACTS is not None:
 		shell('cp', [LINTER_EXPORT_PATH, CIRCLE_ARTIFACTS])
+		shell('cp', [ANALYZER_EXPORT_PATH, CIRCLE_ARTIFACTS])
 	else:
 		print('nothing to do!')
 
