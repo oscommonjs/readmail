@@ -38,7 +38,7 @@ install-deps: install-tools
 		shell('gem', ['install', 'bundler'])
 	shell('bundle', 'install')
 
-check: install-deps
+check:
 	print('validating environment...')
 	checkfor('python3')
 	checkfor('pip3')
