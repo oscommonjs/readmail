@@ -62,11 +62,10 @@ clean:
 	remove('./build')
 	remove('./dist')
 	remove('./.eggs')
-	remove(file_named(LINTER_EXPORT_NAME))
 	removeall('.DS_Store')
+	removeall('*_output.txt')
 	removeall('*.pyc')
 	removeall('__pycache__', flags=['-type', 'd'])
-	remove(file_named(INSTALLED_FILES_RECORD_NAME))
 
 lint: check clean
 	print('running linter... ')
