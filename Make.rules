@@ -86,7 +86,7 @@ build: analyze
 	touch(file_named(INSTALLED_FILES_RECORD_NAME))
 	_, output, _ = shellexact('python3', ['setup.py', 'install', '--record', file_named(INSTALLED_FILES_RECORD_NAME)])
 	write_file(file_named(BUILD_EXPORT_NAME), output)
-	print(outputS)
+	print(output)
 	print('generated build report: '+file_named(BUILD_EXPORT_NAME))
 
 danger: build
