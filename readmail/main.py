@@ -34,11 +34,9 @@ import sys
 import argparse
 from .version                               import __version__ as READMAIL_VERSION
 from .helpers.Logger                        import Logger
-from .helpers.Switch                        import Switch
 from .configuration.mailboxconfiguration    import MailboxConfiguration
-from .data.mail                             import MailData
+from .interface.ui                          import UI
 from .                                      import term
-from .                                      import data
 
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='a simple email reader, for use with getmail')
@@ -95,12 +93,17 @@ def main(args=sys.argv[1:]):
 
     # now parse the arguments
     init = parser.parse_args(all_arguments)
-    
+
     # perform the logging modifications before we do any other operations
     Logger.disableANSI(init.no_ansi)
     Logger.enableDebugLogger(init.debug)
     Logger.isVerbose(init.verbose)
     Logger.isSilent(init.quiet)
+
+    Logger.write().debug('Setting Logger.disableANSI(%s)' % str(init.no_ansi))
+    Logger.write().debug('Setting Logger.enableDebugLogger(%s)' % str(init.debug))
+    Logger.write().debug('Setting Logger.isVerbose(%s)' % str(init.verbose))
+    Logger.write().debug('Setting Logger.isSilent(%s)' % str(init.quiet))
     
     # verify that this is being run in a UTF-8 supported environment
     if term.uses_suitable_locale() is False:
@@ -112,9 +115,8 @@ def main(args=sys.argv[1:]):
         if config.is_valid() is not True:
             Logger.write().error('Could not load; invalid configuration')
             sys.exit(1)
-        mailbox = data.mail.LoadMailboxFromConfiguration(config.get_type(), config.get_location())
-        if mailbox is not None:
-            mail_data = MailData(mailbox)
+        interface = UI(config)
+        interface.start()
 
 if __name__ == '__main__':
     main()

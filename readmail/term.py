@@ -32,11 +32,14 @@
 import os
 import locale
 import codecs
+from .helpers.Logger        import Logger
 
 def uses_suitable_locale() -> bool:
     is_suitable_locale = True
     if codecs.lookup(locale.getpreferredencoding()).name == 'ascii': #pragma: no cover
+        Logger.write().info('Found locale set to "ASCII", attempting to switch to UTF8 supported...')
         os.environ['LANG'] = 'en_US.UTF-8'
         if codecs.lookup(locale.getpreferredencoding()).name == 'ascii': #pragma: no cover
+            Logger.write().info('Failed to switch locales by changing the environment variable "LANG"!')
             is_suitable_locale = False
     return is_suitable_locale

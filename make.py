@@ -31,6 +31,9 @@ except ImportError:
 # This script frequently uses singleton objects as tiny inline modules.
 class Util: # Singleton, access as "util". See end of __init__ for symbols.
     def __init__(s):
+        def listmap(a,b): # Keep python 3 map from being overly clever
+            return list(map(a,b))
+
         def flatten(x):
             result = []
             for v in x:
@@ -51,10 +54,9 @@ class Util: # Singleton, access as "util". See end of __init__ for symbols.
         def tolist(x):
             if x is None:
                 return []
-            elif type(x) == list:
+            if type(x) == list:
                 return x
-            else:
-                return [x]
+            return [x]
 
         def tovar(x):
             if [] == x or None == x or False == x:
@@ -62,8 +64,15 @@ class Util: # Singleton, access as "util". See end of __init__ for symbols.
             if True == x:
                 return "1"
             if type(x) == list:
-                return varizelist(map(tovar, flatten(x)))
+                return varizelist(listmap(tovar, flatten(x)))
             return str(x)
+
+        def vartostring(x):
+            if x is None:
+                return ''
+            elif type(x) == list:
+                return " ".join(x)
+            return x
 
         py3 = sys.version_info >= (3, 0)
 
@@ -93,7 +102,7 @@ class Util: # Singleton, access as "util". See end of __init__ for symbols.
 
         def expressionlistfor(makefile, line):
             ev = lambda x: x.evaluate(makefile, line)
-            evlist = lambda x: util.flatten(map(ev, x))
+            evlist = lambda x: util.flatten(listmap(ev, x))
             return evlist
 
         # Name to register python code under
@@ -111,10 +120,12 @@ class Util: # Singleton, access as "util". See end of __init__ for symbols.
         scopecopy = copy.copy
 
         # Export
+        s.listmap = listmap
         s.flatten = flatten
         s.varizelist = varizelist
         s.tolist = tolist
         s.tovar = tovar
+        s.vartostring = vartostring
         s.py3 = py3
         s.utfopen = utfopen
         s.utflines = utflines
@@ -335,7 +346,7 @@ class Baseline(object):
         return expr.evaluate(s.makefile, s.line)
 
     def expressionlist(s, lst):
-        return util.flatten(map(s.expression, lst))
+        return util.flatten(util.listmap(s.expression, lst))
 
 # Statement: Assign variable
 class Assignline(Baseline):
@@ -449,7 +460,7 @@ class Versionline(Baseline):
     @classmethod
     def construct(cls, p):
         def lister(version): # Ugly splitting because Pyparsing combine() does both too much & not enough
-            return map(int, str.split(version, "."))
+            return util.listmap(int, str.split(version, "."))
         to = p.to
         return cls(lister(p.base), p.special, lister(to) if to else None)
 
@@ -615,7 +626,7 @@ class Rule(object):
         s.innertarget = target
         s.innerdep = dep
         s.target = makefile.loc.file( s.innertarget )
-        s.dep = map( makefile.loc.file, dep )
+        s.dep = util.listmap( makefile.loc.file, dep )
         s.code = code
 
     # Ruleline interface: Post-Evaluate should call this for rules that need to run
@@ -1120,7 +1131,8 @@ class Makefile(object):
     def exportenv(s):
         env = s.exportenvcache
         for key in s.exportenvkeys:
-            env[key] = s.globals[key]
+            value = s.globals[key]
+            env[key] = util.vartostring(value) # Quirk: Can only write strings into this object
         return env
 
     # Block scope trick: This function creates the populate() function then returns it
@@ -1192,20 +1204,29 @@ class Makefile(object):
                 if (get is None or get=="stdout") and resultcode:
                     raise CommandFailureException("Command `%s` failed with exit code %d" % (cmd[0], resultcode))
 
-                # Process results
+                # Process results: errstr/outstr not needed
                 if get is None:
                     return
-                elif get=="success":
+                if get=="success":
                     return not resultcode
-                elif get=="exact":
+
+                # Process results: errstr/outstr needed
+                # The output of subprocess is reinterpreted as UTF-8. This is because unicode in a Make.rules in Python 2 gets
+                # converted into UTF-8 bytes, so this increases the chance of similar behavior when running in Python 2 vs 3.
+                # TODO: Take an 'encoding' argument to shell(); in 2, use it to re-encode to UTF-8; write unicode in/out tests
+                if util.py3:
+                    outstr = codecs.decode(outstr, 'utf-8')
+                    errstr = codecs.decode(errstr, 'utf-8')
+
+                if get=="exact":
                     return (resultcode, outstr, errstr)
-                elif get =="stdout":
+                if get =="stdout":
                     result = outstr.split("\n") # FIXME: Does this break on Windows?
                     while result and not result[-1]:
                         result.pop()
                     return util.tovar(result)
-                else:
-                    raise ValueError("Called shell() requesting '%s' which is not a recognized value" % (get))
+
+                raise ValueError("Called shell() requesting '%s' which is not a recognized value" % (get))
 
             def shellwith(get):
                 def shellforward(*args, **kwargs):

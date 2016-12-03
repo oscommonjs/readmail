@@ -1,2 +1,2 @@
-blessings >= 1.6
+blessed >= 1.14.1
 pylint >= 1.6.1

@@ -72,4 +72,6 @@ class MailboxConfiguration(object):
             Logger.write().error('Unable to initialize; could not find the "rules" configuration file in the directory "%s"' % self.__configuration_dir)
         else:
             self.__rule_configuration = ruleconfiguration.RuleConfiguration(rule_file_path)
+
+        
         return valid

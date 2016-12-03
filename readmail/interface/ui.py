@@ -28,38 +28,20 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import mailbox
-from ..helpers.Logger       import Logger
-from ..helpers.Switch       import Switch
+import blessed
+from ..helpers.Logger           import Logger
+from ..bindings                 import *
 
-def LoadMailboxFromConfiguration(mailbox_type: str, location: str) -> mailbox.Mailbox:
-    mail_box = None
-    if os.path.exists(location) is True:
-        Logger.write().debug('Found mailbox type "%s"' % mailbox_type)
-        for case in Switch(mailbox_type):
-            if case('maildir'):
-                mail_box = mailbox.Maildir(location)
-                break
-            if case('mbox'):
-                mail_box = mailbox.mbox(location)
-                break
-            if case('mh'):
-                mail_box = mailbox.MH(location)
-                break
-            if case('babyl'):
-                mail_box = mailbox.Babyl(location)
-                break
-            if case('mmdf'):
-                mail_box = mailbox.MMDF(location)
-                break
-            if case():
-                Logger.write().error('Unknown mailbox type "%s" was specified' % mailbox_type)
-                break
-    else:
-        Logger.write().error('The mailbox path given (%s) does not exist!' % location)
-    return mail_box
+class UI(object):
 
-class MailData(object):
-    def __init__(self, mail_box: mailbox.Mailbox):
-        self.__mailbox = mail_box
+    def __init__(self, config):
+        self.__configuration = config
+        self.__terminal = blessed.Terminal()
+        self.__is_running = True
+
+    def start(self) -> None:
+        while self.__is_running is True:
+            with self.__terminal.cbreak():
+                value = self.__terminal.inkey()
+                if value in list(Bindings.keys()):
+                    print(Bindings[value])

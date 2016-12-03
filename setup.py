@@ -45,12 +45,13 @@ setup(
         'readmail/configuration',
         'readmail/data',
         'readmail/viewer',
+        'readmail/interface',
     ],
     entry_points = { 
         'console_scripts': [ 'readmail = readmail:main' ] 
     },
     zip_safe = False,
     install_requires = [
-        'blessings',
+        'blessed',
     ]
 )
