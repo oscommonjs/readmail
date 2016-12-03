@@ -101,8 +101,7 @@ danger: build
 artifacts: danger
 	print('processing artifacts...')
 	if CIRCLE_ARTIFACTS is not None:
-		shell('cp', [file_named(LINTER_EXPORT_NAME), CIRCLE_ARTIFACTS])
-		shell('cp', [file_named(ANALYZER_EXPORT_PATH), CIRCLE_ARTIFACTS])
+		shell('cp', [file_named('*'), CIRCLE_ARTIFACTS])
 	else:
 		print('nothing to do!')
 
