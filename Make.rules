@@ -80,13 +80,15 @@ build: lint
 	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
 
 danger: build
-	print('running danger... ')
-	if DANGER_GITHUB_API_TOKEN is not None:
-		print('(PR)... ')
-		shell('bundle', ['exec', 'danger', '--verbose'])
-	else:
-		print('(local)... ')
-		shell('bundle', ['exec', 'danger', 'local', '--verbose'])
+	try:
+		if DANGER_GITHUB_API_TOKEN is not None:
+			print('running danger (PR)... ')
+			shell('bundle', ['exec', 'danger', '--verbose'])
+		else:
+			print('running danger (local)... ')
+			shell('bundle', ['exec', 'danger', 'local', '--verbose'])
+	except:
+		print('Did not run danger!')
 
 artifacts: danger
 	print('processing artifacts...')
