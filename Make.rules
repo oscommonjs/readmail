@@ -1,12 +1,16 @@
 env DANGER_GITHUB_API_TOKEN
 env CIRCLE_ARTIFACTS
 
-LINTER_EXPORT_PATH = lint_output.txt
-ANALYZER_EXPORT_PATH = static_analysis_output.txt
-INSTALLED_FILES_RECORD = installed_files.txt
+LINTER_EXPORT_NAME = lint
+ANALYZER_EXPORT_NAME = static_analysis
+BUILD_EXPORT_NAME = build
+INSTALLED_FILES_RECORD_NAME = installed_files
 	
 global:
 	SYSTEM_NAME = shellget('uname', '-s')
+
+	def file_named(name):
+		return name+'_output.txt'
 	
 	def write_file(file_path, file_contents):
 		fd = open(file_path, 'w+')
@@ -44,48 +48,45 @@ check:
 	checkfor('python3')
 	checkfor('pip3')
 	checkfor('pylint')
+	checkfor('mypy')
 	checkfor('gem')
 	checkfor('bundle')
 	checkfor('danger')
 
 clean:
 	print('removing existing installation... ')
-	touch(INSTALLED_FILES_RECORD)
-	for file_path in tolist(shellget('cat', INSTALLED_FILES_RECORD)):
+	touch(file_named(INSTALLED_FILES_RECORD_NAME))
+	for file_path in tolist(shellget('cat', file_named(INSTALLED_FILES_RECORD_NAME))):
 		remove(file_path)
 	remove('./readmail.egg-info')
 	remove('./build')
 	remove('./dist')
 	remove('./.eggs')
-	remove(LINTER_EXPORT_PATH)
+	remove(file_named(LINTER_EXPORT_NAME))
 	removeall('.DS_Store')
 	removeall('*.pyc')
 	removeall('__pycache__', flags=['-type', 'd'])
-	remove(INSTALLED_FILES_RECORD)
+	remove(file_named(INSTALLED_FILES_RECORD_NAME))
 
 lint: check clean
 	print('running linter... ')
-	touch(LINTER_EXPORT_PATH)
+	touch(file_named(LINTER_EXPORT_NAME))
 	_, output, _ = shellexact('pylint', ['--rcfile=pylintrc', './readmail'])
-	write_file(LINTER_EXPORT_PATH, output)
-	print('generated linter report: '+LINTER_EXPORT_PATH)
+	write_file(file_named(LINTER_EXPORT_NAME), output)
+	print('generated linter report: '+file_named(LINTER_EXPORT_NAME))
 
 analyze: lint
 	print('running static analyzer... ')
-	touch(ANALYZER_EXPORT_PATH)
-	_, output, _ shellexact('mypy', ['-p', './readmail'])
-	write_file(ANALYZER_EXPORT_PATH, output)
-	print('generated static analysis report: '+ANALYZER_EXPORT_PATH)
-
-dev:
-	print('building...')
-	touch(INSTALLED_FILES_RECORD)
-	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
+	touch(file_named(ANALYZER_EXPORT_NAME))
+	_, output, _  = shellexact('mypy', ['-p', './readmail'])
+	write_file(file_named(ANALYZER_EXPORT_NAME), output)
+	print('generated static analysis report: '+file_named(ANALYZER_EXPORT_NAME))
 
 build: analyze
 	print('building...')
-	touch(INSTALLED_FILES_RECORD)
-	shell('python3', ['setup.py', 'install', '--record', INSTALLED_FILES_RECORD])
+	touch(file_named(INSTALLED_FILES_RECORD_NAME))
+	_, output, _ = shellexact('python3', ['setup.py', 'install', '--record', file_named(INSTALLED_FILES_RECORD_NAME)])
+	write_file(file_named(BUILD_EXPORT_NAME), output)
 
 danger: build
 	try:
@@ -101,8 +102,8 @@ danger: build
 artifacts: danger
 	print('processing artifacts...')
 	if CIRCLE_ARTIFACTS is not None:
-		shell('cp', [LINTER_EXPORT_PATH, CIRCLE_ARTIFACTS])
-		shell('cp', [ANALYZER_EXPORT_PATH, CIRCLE_ARTIFACTS])
+		shell('cp', [file_named(LINTER_EXPORT_NAME), CIRCLE_ARTIFACTS])
+		shell('cp', [file_named(ANALYZER_EXPORT_PATH), CIRCLE_ARTIFACTS])
 	else:
 		print('nothing to do!')
 
@@ -113,6 +114,7 @@ help:
 	print('./make.py build         -- Builds and installs')
 	print('./make.py clean         -- Removes an existing build')
 	print('./make.py lint          -- Runs pylint on the code')
+	print('./make.py analyze       -- Runs mypy analysis on the code')
 	print('./make.py install-tools -- Installs tools uses for development')
 	print('./make.py install-deps  -- Installs the dependencies needed to build')
 	print('./make.py danger        -- Runs Danger on the code')
