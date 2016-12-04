@@ -10,6 +10,7 @@ import optparse
 import re
 import copy
 import codecs
+import locale
 import traceback
 import subprocess
 
@@ -1176,57 +1177,89 @@ class Makefile(object):
 
             # Can raise CommandNotFoundException or CommandFailureException on failure running,
             # or ValueError on gibberish arguments.
-            def shell(cmd, args=None, cwd=None, env=None, get=None):
-                # Massage arguments
+            def shell(cmd, args=None, cwd=None, env=None, get=None, out=None, err=None, appendout=False, appenderr=False, encoding="utf-8"):
+                # Test arguments for coherence
                 if cmd is None:
                     raise ValueError("Trying to run shell command, but cmd is null")
                 if type(cmd) == list and type(args) == list:
                     raise ValueError("Trying to run shell command, but both cmd and args are lists")
+
+                # Test arguments for unsupported modes
+                doubleerror = "Called shell() requesting %s be both written to a file and returned. Only one is supported."
+                if out and (get == "stdout" or get == "exact"):
+                    raise ValueError(doubleerror % ("stdout"))
+                if err and get == "exact":
+                    raise ValueError(doubleerror % ("stderr"))
+                if encoding == 'bytes' and get=='stdout':
+                    raise ValueError("Trying to run shell command, but encoding=bytes and get=stdout are not supported together")
+
+                # Massage arguments
                 cmd = util.tolist(cmd) + util.tolist(args)
                 if env is None:
                     env = s.exportenv()
+                if encoding == 'default':
+                    encoding = locale.getpreferredencoding()
 
                 # Where does output go?
-                if get is None:
+                closeout, closeerr = None, None
+                if get is None: # Allow to print to stderr/out
                     stdout, stderr = None, None
-                else:
+                else:           # make.py should print output
                     stdout, stderr = subprocess.PIPE, subprocess.PIPE
+                if out:
+                    closeout = open(out, "a" if appendout else "w")
+                    stdout = closeout
+                if err:
+                    closeerr = open(err, "a" if appenderr else "w")
+                    stderr = closeerr
 
-                # Run command
+                # Area where closeout/closeerr are potentially used
                 try:
-                    proc = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, cwd=cwd, env=env)
-                except OSError as e:
-                    raise CommandNotFoundException("Command `%s` does not exist or is not an excecutable" % (cmd[0]))
-                outstr, errstr = proc.communicate()
-                resultcode = proc.wait()
+                    # Run command
+                    try:
+                        proc = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, cwd=cwd, env=env)
+                    except OSError as e:
+                        raise CommandNotFoundException("Command `%s` does not exist or is not an excecutable" % (cmd[0]))
+                    outstr, errstr = proc.communicate()
+                    resultcode = proc.wait()
 
-                # Potential early bailout for process failure
-                if (get is None or get=="stdout") and resultcode:
-                    raise CommandFailureException("Command `%s` failed with exit code %d" % (cmd[0], resultcode))
+                    # Potential early bailout for process failure
+                    if (get is None or get=="stdout") and resultcode:
+                        raise CommandFailureException("Command `%s` failed with exit code %d" % (cmd[0], resultcode))
 
-                # Process results: errstr/outstr not needed
-                if get is None:
-                    return
-                if get=="success":
-                    return not resultcode
+                    # Process results: errstr/outstr not needed
+                    if get is None:
+                        return
+                    if get=="success":
+                        return not resultcode
 
-                # Process results: errstr/outstr needed
-                # The output of subprocess is reinterpreted as UTF-8. This is because unicode in a Make.rules in Python 2 gets
-                # converted into UTF-8 bytes, so this increases the chance of similar behavior when running in Python 2 vs 3.
-                # TODO: Take an 'encoding' argument to shell(); in 2, use it to re-encode to UTF-8; write unicode in/out tests
-                if util.py3:
-                    outstr = codecs.decode(outstr, 'utf-8')
-                    errstr = codecs.decode(errstr, 'utf-8')
+                    # Process results: errstr/outstr needed
+                    # The output of subprocess is reinterpreted as UTF-8. This is because unicode in a Make.rules in Python 2 gets
+                    # converted into UTF-8 bytes, so this increases the chance of similar behavior when running in Python 2 vs 3.
+                    suppressdecode = encoding == "bytes" or (not util.py3 and encoding == "utf-8")
+                    if outstr and not suppressdecode:
+                        outstr = codecs.decode(outstr, encoding)
+                        if not util.py3:
+                            outstr = codecs.encode(outstr, "utf-8")
+                    if errstr and not suppressdecode:
+                        errstr = codecs.decode(errstr, encoding)
+                        if not util.py3:
+                            outstr = codecs.encode(outstr, "utf-8")
 
-                if get=="exact":
-                    return (resultcode, outstr, errstr)
-                if get =="stdout":
-                    result = outstr.split("\n") # FIXME: Does this break on Windows?
-                    while result and not result[-1]:
-                        result.pop()
-                    return util.tovar(result)
+                    if get=="exact":
+                        return (resultcode, outstr, errstr)
+                    if get =="stdout":
+                        result = outstr.split("\n") # FIXME: Does this break on Windows?
+                        while result and not result[-1]:
+                            result.pop()
+                        return util.tovar(result)
 
-                raise ValueError("Called shell() requesting '%s' which is not a recognized value" % (get))
+                    raise ValueError("Called shell() requesting '%s' which is not a recognized value" % (get))
+                finally:
+                    if closeout:
+                        closeout.close()
+                    if closeerr:
+                        closeerr.close()
 
             def shellwith(get):
                 def shellforward(*args, **kwargs):
