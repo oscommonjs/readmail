@@ -38,20 +38,49 @@ class MetaClassVars(type):
         return type.__new__(mcs, classname, bases, dictionary)
 
 class Action(metaclass=MetaClassVars):
-    _cls_vars = ['refresh', 'quit', 'read', 'folders', 'back']
+    _cls_vars = [
+        'refresh', 'quit',
+
+        'up', 'down', 'left', 'right',
+
+        'select', 'back',
+    ]
 
 Actions = set({
     Action.refresh,
     Action.quit,
-    Action.read,
-    Action.folders,
+    
+    Action.up,
+    Action.down,
+    Action.left,
+    Action.right,
+
+    Action.select,
     Action.back,
 })
 
 class Keycode(metaclass=MetaClassVars):
-    _cls_vars = list(string.ascii_letters)
+    _cls_vars = list(string.ascii_letters+string.digits)
+
+
+class Keysequence(metaclass=MetaClassVars):
+    _cls_vars = [
+        'KEY_UP', 'KEY_DOWN', 'KEY_LEFT', 'KEY_RIGHT',
+
+        'KEY_ENTER',
+
+        'KEY_DELETE',
+    ]
 
 Bindings = dict({
     Keycode.Q: Action.quit,
-    Keycode.r: Action.refresh,
+    Keycode.R: Action.refresh,
+
+    Keysequence.KEY_UP: Action.up,
+    Keysequence.KEY_DOWN: Action.down,
+    Keysequence.KEY_LEFT: Action.left,
+    Keysequence.KEY_RIGHT: Action.right,
+
+    Keysequence.KEY_ENTER: Action.select,
+    Keysequence.KEY_DELETE: Action.back,
 })

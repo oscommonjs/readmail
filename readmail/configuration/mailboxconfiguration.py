@@ -52,6 +52,9 @@ class MailboxConfiguration(object):
     def get_location(self) -> str:
         return os.path.expanduser(self.__mailbox_config.get('account', 'location'))
 
+    def get_folders(self) -> list:
+        return self.__rule_config.get_folders()
+
     def is_valid(self) -> bool:
         rule_file_path = None
         
@@ -71,7 +74,7 @@ class MailboxConfiguration(object):
         if valid is False:
             Logger.write().error('Unable to initialize; could not find the "rules" configuration file in the directory "%s"' % self.__configuration_dir)
         else:
-            self.__rule_configuration = ruleconfiguration.RuleConfiguration(rule_file_path)
+            self.__rule_config = ruleconfiguration.RuleConfiguration(rule_file_path)
 
         
         return valid

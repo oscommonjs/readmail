@@ -34,3 +34,6 @@ class RuleConfiguration(object):
     def __init__(self, rule_config_path):
         self.__config = configparser.ConfigParser()
         self.__config.read(rule_config_path)
+
+    def get_folders(self) -> list:
+        return ['All', 'Inbox'] + self.__config.sections()

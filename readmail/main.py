@@ -34,7 +34,6 @@ import sys
 import argparse
 from .version                               import __version__ as READMAIL_VERSION
 from .helpers.Logger                        import Logger
-from .configuration.mailboxconfiguration    import MailboxConfiguration
 from .interface.ui                          import UI
 from .                                      import term
 
@@ -110,12 +109,7 @@ def main(args=sys.argv[1:]):
         Logger.write().error('Environment could not be configured to support UTF-8, exiting!')
         sys.exit(1)
     else:
-        # start up the mailbox configuration first to verify that we have a valid config to work from
-        config = MailboxConfiguration(init.config)
-        if config.is_valid() is not True:
-            Logger.write().error('Could not load; invalid configuration')
-            sys.exit(1)
-        interface = UI(config)
+        interface = UI(init)
         interface.start()
 
 if __name__ == '__main__':
