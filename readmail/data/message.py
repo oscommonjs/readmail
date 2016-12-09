@@ -28,12 +28,13 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import configparser
+import os
+import mailbox
+from ..helpers.Logger       import Logger
+from ..helpers.Switch       import Switch
 
-class RuleConfiguration(object):
-    def __init__(self, rule_config_path):
-        self.__config = configparser.ConfigParser()
-        self.__config.read(rule_config_path)
+class MessageData(object):
+    def __init__(self, message) -> None:
+        self.__message = message
+        
 
-    def get_folders(self) -> list:
-        return ['All', 'Inbox'] + self.__config.sections()

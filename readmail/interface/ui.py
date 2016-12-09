@@ -29,24 +29,18 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import blessed
+from progress.bar import Bar
 from ..helpers.Logger                       import Logger
 from ..helpers.Switch                       import Switch
 from ..bindings                             import *
-from ..configuration.mailboxconfiguration   import MailboxConfiguration
-
-InFolderView = True
-SelectedFolderIndex = 0
+from ..configuration                        import MailboxConfiguration
+from ..data.mail                            import *
+from ..data.message                         import *
 
 InMessageView = False
 SelectedMessageIndex = 0
 
 def reset_globals() -> None:
-    global InFolderView
-    InFolderView = True
-    
-    global SelectedFolderIndex
-    SelectedFolderIndex = 0
-    
     global InMessageView
     InMessageView = False
 
@@ -54,21 +48,7 @@ def reset_globals() -> None:
     SelectedMessageIndex = 0
 
 def draw_clear(terminal: blessed.Terminal) -> None:
-    terminal.move(0,0)
     terminal.clear()
-
-def draw_folders(terminal: blessed.Terminal, folders: list) -> None:
-    terminal.clear()
-    print(terminal.bold('Folders:'))
-    y, x = terminal.get_location()
-    terminal.move_y(y+2)
-    folder_index = 0
-    for folder in folders:
-        if folder_index == SelectedFolderIndex:
-            print(terminal.move_x(x+2) + terminal.reverse(folder))
-        else:
-            print(terminal.move_x(x+2) + folder)
-        folder_index += 1
 
 def draw_exit(terminal: blessed.Terminal) -> None:
     terminal.exit_fullscreen()
@@ -79,6 +59,7 @@ class UI(object):
         self.__startup = initialization
         self.__terminal = blessed.Terminal()
         self.__is_running = True
+        self.__folders = set()
         self.refresh()
 
     def process_input(self) -> None:
@@ -122,58 +103,43 @@ class UI(object):
         draw_exit(self.__terminal)
 
     def refresh(self) -> None:
+        folder_set = set()
         # start up the mailbox configuration first to verify that we have a valid config to work from
         self.__config = MailboxConfiguration(self.__startup.config)
         if self.__config.is_valid() is not True:
             Logger.write().error('Could not load; invalid configuration')
         reset_globals()
-        self.folders()
-
-    def folders(self) -> None:
-        with self.__terminal.fullscreen():
-            draw_clear(self.__terminal)
-            draw_folders(self.__terminal, self.__config.get_folders())
-
-    def read_folder(self) -> None:
         draw_clear(self.__terminal)
+        mailbox_data = LoadMailboxFromConfiguration(self.__config.get_type(), self.__config.get_location())
+        self.__data = MailData(mailbox_data)
+        messages = self.__data.messages()
+        for message_key in Bar('Loading eMail').iter(messages):
+            message = self.__data.get_message(message_key)
+
+    def view_mail(self) -> None:
+        with self.__terminal.fullscreen():
 
     def navigate_up(self) -> None:
-        if InFolderView is True:
-            global SelectedFolderIndex                    
-            if SelectedFolderIndex - 1 >= 0:
-                SelectedFolderIndex -= 1
-            self.folders()
-        if InMessageView is True:
-            global SelectedMessageIndex
-            self.read_folder()
+        if InMessageView is False:
+            global SelectedMessageIndex                    
+            if SelectedMessageIndex - 1 >= 0:
+                SelectedMessageIndex -= 1
+            self.view_mail()
 
     def navigate_down(self) -> None:
-        if InFolderView is True:
-            global SelectedFolderIndex
-            if SelectedFolderIndex + 1 < len(self.__config.get_folders()):
-                SelectedFolderIndex += 1
-            self.folders()
-        if InMessageView is True:
+        if InFolderView is False:
             global SelectedMessageIndex
-            self.read_folder()
+            if SelectedMessageIndex + 1 < len(self.__messages):
+                SelectedMessageIndex += 1
+            self.view_mail()
 
     def navigate_in(self) -> None:
-        global InFolderView
         global InMessageView
-        if InFolderView is True:
-            InFolderView = False
-            self.read_folder()
-        else:
-            if InMessageView is False:
-                InMessageView = True
+        if InMessageView is False:
+            InMessageView = True
 
     def navigate_back(self) -> None:
         global InMessageView
-        global InFolderView
         if InMessageView is True:
             InMessageView = False
-            self.read_folder()
-        else:
-            if InFolderView is False:
-                InFolderView = True
-                self.folders()
+            self.view_mail()

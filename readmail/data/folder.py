@@ -33,39 +33,18 @@ import mailbox
 from ..helpers.Logger       import Logger
 from ..helpers.Switch       import Switch
 
-def LoadMailboxFromConfiguration(mailbox_type: str, location: str) -> mailbox.Mailbox:
-    mail_box = None
-    if os.path.exists(location) is True:
-        Logger.write().debug('Found mailbox type "%s"' % mailbox_type)
-        for case in Switch(mailbox_type):
-            if case('maildir'):
-                mail_box = mailbox.Maildir(location)
-                break
-            if case('mbox'):
-                mail_box = mailbox.mbox(location)
-                break
-            if case('mh'):
-                mail_box = mailbox.MH(location)
-                break
-            if case('babyl'):
-                mail_box = mailbox.Babyl(location)
-                break
-            if case('mmdf'):
-                mail_box = mailbox.MMDF(location)
-                break
-            if case():
-                Logger.write().error('Unknown mailbox type "%s" was specified' % mailbox_type)
-                break
-    else:
-        Logger.write().error('The mailbox path given (%s) does not exist!' % location)
-    return mail_box
+class MailFolder(object):
+    def __init__(self, identifier: str) -> None:
+        self.__identifier = identifier
+        self.__messages = list()
 
-class MailData(object):
-    def __init__(self, mail_box: mailbox.Mailbox) -> None:
-        self.__mailbox = mail_box
+    def get_identifier(self) -> str:
+        return self.__identifier
 
-    def get_message(self, message_name: str) -> object:
-        return self.__mailbox.get_message(message_name)
+    def display_name(self) -> str:
+        # =?utf-8?q?INBOX=2EOld_Mail?=
+        name_string = self.__identifier.strip('=')
+        return name_string
 
-    def messages(self) -> list:
-        return self.__mailbox.keys()
+    def add_message(self, message) -> None:
+        self.__messages.append(message)

@@ -1,3 +1,5 @@
 blessed >= 1.14.1
+progress = 1.2
+
 pylint >= 1.6.1
 mypy-lang >= 0.4.5

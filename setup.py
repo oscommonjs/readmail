@@ -42,7 +42,6 @@ setup(
     packages = [ 
         'readmail',
         'readmail/helpers',
-        'readmail/configuration',
         'readmail/data',
         'readmail/viewer',
         'readmail/interface',
@@ -53,5 +52,6 @@ setup(
     zip_safe = False,
     install_requires = [
         'blessed',
+        'progress',
     ]
 )
